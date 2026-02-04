@@ -8,15 +8,17 @@ import sqlite3
 import requests
 import time
 import sys
+import os
 from datetime import datetime
 
-API_KEY = "e182192ee7716d7d8446fe09901b767e69a2fb03"
+API_KEY = os.environ.get('COMICVINE_API_KEY')
 USER_AGENT = "ComicIdentifier/1.0"
 BASE_URL = "https://comicvine.gamespot.com/api"
 
 # Configurações de rate limiting
-REQUEST_DELAY = 1.0  # Segundos entre requisições (Comic Vine permite ~1 req/seg)
+REQUEST_DELAY = 2.0  # Segundos entre requisições (aumentado para evitar erro 420)
 MAX_RETRIES = 3
+RETRY_DELAY = 5.0  # Delay adicional após erro 420
 
 class ComicVineAPI:
     """Wrapper para a API do Comic Vine"""
@@ -45,6 +47,14 @@ class ComicVineAPI:
             try:
                 self._wait_for_rate_limit()
                 response = self.session.get(url, params=params, timeout=30)
+                
+                # Se receber 420 (rate limit), espera mais tempo
+                if response.status_code == 420:
+                    wait_time = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                    print(f"    ⚠️  Rate limit (420). Aguardando {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                
                 response.raise_for_status()
                 data = response.json()
                 
@@ -311,6 +321,24 @@ def export_results(db_path, output_file='comics_identified.csv'):
 def main():
     """Função principal"""
     import argparse
+    
+    # Valida se a API key está configurada
+    if not API_KEY:
+        print("=" * 70)
+        print("  ❌ ERRO: API Key não configurada")
+        print("=" * 70)
+        print("\n⚠️  A variável de ambiente COMICVINE_API_KEY não está definida.\n")
+        print("Configure a chave antes de executar:\n")
+        print("  # Linux/Mac:")
+        print("  export COMICVINE_API_KEY='sua_chave_aqui'\n")
+        print("  # Windows (CMD):")
+        print("  set COMICVINE_API_KEY=sua_chave_aqui\n")
+        print("  # Windows (PowerShell):")
+        print("  $env:COMICVINE_API_KEY='sua_chave_aqui'\n")
+        print("Obtenha sua chave gratuita em:")
+        print("  https://comicvine.gamespot.com/api/\n")
+        print("=" * 70)
+        sys.exit(1)
     
     parser = argparse.ArgumentParser(description='Identifica comics via Comic Vine API')
     parser.add_argument('--db', default='comics_inventory.db', help='Caminho do banco de dados')

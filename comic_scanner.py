@@ -59,12 +59,18 @@ def clean_filename(filename):
     # Remove tags entre parênteses e colchetes
     name = re.sub(r'\(.*?\)|\[.*?\]', '', name)
     
+    # Remove números estranhos como 28 29 que aparecem no exemplo
+    # (provavelmente artefatos de codificação)
+    name = re.sub(r'\b\d{2}\s+\d{2}', '', name)
+    
     # Remove tags comuns de scan groups e qualidade
     scan_tags = [
         'Digital', 'Mephisto', 'Empire', 'DCP', 'EvilTrash', 'GreenGiant',
         'Zone', 'bittertek', 'eclipse', 'c2c', 'Scan', 'HD', 'HQ',
         'Minutemen', 'Glorith', 'AnHeroGold', 'ScannerDarkly', 'Nemesis43',
-        'CaptainMalcom', 'Archangel', 'BlackManta', 'Shadowcat', 'Oroboros'
+        'CaptainMalcom', 'Archangel', 'BlackManta', 'Shadowcat', 'Oroboros',
+        'Son of Ultron', 'digital', 'scans', 'retail', 'web', 'cbr', 'cbz',
+        'complete', 'ongoing', 'fixed', 'proper', 'repost'
     ]
     
     for tag in scan_tags:
@@ -76,7 +82,7 @@ def clean_filename(filename):
     if year:
         name = name.replace(year, "")
     
-    # Extrai número da edição
+    # Extrai número da edição ANTES de limpar mais
     # Padrões: 001, #01, v1, vol 1, 1-of-3, etc
     issue_patterns = [
         r'\b(\d{1,4})\s*(?:of|de)\s*\d{1,4}\b',  # 1-of-3, 1 of 3
@@ -94,9 +100,30 @@ def clean_filename(filename):
             name = re.sub(pattern, '', name, count=1, flags=re.IGNORECASE)
             break
     
+    # Remove palavras comuns que não são título
+    noise_words = ['to', 'the', 'last', 'man', 'first', 'issue', 'part', 'chapter']
+    # Mas APENAS se aparecerem no final ou sozinhas
+    for word in noise_words:
+        name = re.sub(rf'\s+{word}\s+\d+\s*$', '', name, flags=re.IGNORECASE)
+    
     # Limpa espaços extras e hífens soltos
     title = re.sub(r'\s+', ' ', name).strip()
     title = re.sub(r'\s*-\s*$', '', title).strip()
+    title = re.sub(r'^\s*-\s*', '', title).strip()
+    
+    # Se o título ficou muito longo (>50 chars), provavelmente tem lixo
+    # Tenta pegar só as primeiras palavras
+    if len(title) > 50:
+        words = title.split()
+        # Pega as primeiras 2-4 palavras capitalizadas
+        clean_words = []
+        for word in words[:6]:
+            if word and (word[0].isupper() or word.lower() in ['the', 'a', 'an', 'of']):
+                clean_words.append(word)
+            else:
+                break
+        if clean_words:
+            title = ' '.join(clean_words)
     
     return title, issue_num, year
 
@@ -215,26 +242,99 @@ def show_sample_records(conn, limit=10):
         print(f"    Status: {status}")
         print()
 
+def confirm_paths(scan_path, output_path):
+    """Confirma os caminhos com o usuário"""
+    print("\n" + "=" * 60)
+    print("  ⚙️  CONFIGURAÇÃO")
+    print("=" * 60)
+    print(f"\n📂 Pasta de varredura: {os.path.abspath(scan_path)}")
+    print(f"💾 Pasta de saída:     {os.path.abspath(output_path)}")
+    print(f"\n📊 O banco de dados será criado em:")
+    print(f"   {os.path.join(os.path.abspath(output_path), 'comics_inventory.db')}")
+    print("\n" + "=" * 60)
+    
+    response = input("\n✓ Confirma estes caminhos? (s/n): ").strip().lower()
+    
+    return response in ['s', 'sim', 'y', 'yes']
+
 def main():
     """Função principal"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description='Comic Scanner - Escaneia e cataloga arquivos de comics',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos de uso:
+  %(prog)s                                    # Varre pasta atual, saída em ~/Downloads
+  %(prog)s /path/comics                       # Varre /path/comics, saída em ~/Downloads
+  %(prog)s /path/comics /path/output          # Especifica ambos os caminhos
+  %(prog)s . ~/Documentos/Comics              # Varre pasta atual, saída customizada
+        """
+    )
+    
+    parser.add_argument(
+        'scan_dir',
+        nargs='?',
+        default='.',
+        help='Diretório para varrer (padrão: diretório atual)'
+    )
+    
+    parser.add_argument(
+        'output_dir',
+        nargs='?',
+        default=os.path.expanduser('~/Downloads'),
+        help='Diretório de saída para o banco de dados (padrão: ~/Downloads)'
+    )
+    
+    args = parser.parse_args()
+    
     print("=" * 60)
     print("  🎨 COMIC SCANNER - Fase 1: Inventário")
     print("=" * 60)
     
-    # Diretório raiz (diretório atual por padrão)
-    root_path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    # Expande ~ e resolve caminhos
+    scan_path = os.path.expanduser(args.scan_dir)
+    output_path = os.path.expanduser(args.output_dir)
     
-    if not os.path.exists(root_path):
-        print(f"❌ Erro: Diretório '{root_path}' não encontrado!")
+    # Valida diretório de varredura
+    if not os.path.exists(scan_path):
+        print(f"\n❌ Erro: Diretório de varredura '{scan_path}' não encontrado!")
         sys.exit(1)
+    
+    if not os.path.isdir(scan_path):
+        print(f"\n❌ Erro: '{scan_path}' não é um diretório!")
+        sys.exit(1)
+    
+    # Cria diretório de saída se não existir
+    if not os.path.exists(output_path):
+        print(f"\n📁 Criando diretório de saída: {output_path}")
+        try:
+            os.makedirs(output_path, exist_ok=True)
+        except Exception as e:
+            print(f"❌ Erro ao criar diretório de saída: {e}")
+            sys.exit(1)
+    
+    # Confirma com usuário se recebeu parâmetros
+    if len(sys.argv) > 1:  # Recebeu ao menos 1 parâmetro
+        if not confirm_paths(scan_path, output_path):
+            print("\n❌ Operação cancelada pelo usuário.")
+            sys.exit(0)
+    else:
+        # Mostra configuração padrão sem pedir confirmação
+        print(f"\n📂 Pasta de varredura: {os.path.abspath(scan_path)}")
+        print(f"💾 Pasta de saída:     {os.path.abspath(output_path)}")
+    
+    # Define caminho completo do banco de dados
+    db_path = os.path.join(output_path, 'comics_inventory.db')
     
     # Cria/conecta ao banco de dados
     print("\n📁 Criando/conectando ao banco de dados...")
-    conn = create_database('comics_inventory.db')
-    print("   ✓ Banco de dados pronto!")
+    conn = create_database(db_path)
+    print(f"   ✓ Banco de dados: {db_path}")
     
     # Escaneia diretório
-    scan_directory(root_path, conn)
+    scan_directory(scan_path, conn)
     
     # Mostra estatísticas
     show_statistics(conn)
@@ -243,7 +343,8 @@ def main():
     show_sample_records(conn, 10)
     
     print("\n✅ Inventário completo!")
-    print("   Próximo passo: executar 'comic_identifier.py' para identificar via Comic Vine API")
+    print(f"   📁 Banco de dados salvo em: {db_path}")
+    print(f"\n   Próximo passo: executar 'comic_identifier.py --db {db_path}' para identificar via Comic Vine API")
     
     conn.close()
 
