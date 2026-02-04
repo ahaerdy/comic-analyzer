@@ -198,6 +198,82 @@ def find_series_with_gaps(db_path):
     
     conn.close()
 
+def show_comic_info(db_path, comic_id):
+    """Mostra ficha completa de um comic específico"""
+    conn = connect_db(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM comics WHERE id = ?', (comic_id,))
+    result = cursor.fetchone()
+    
+    if not result:
+        print(f"\n❌ Comic com ID {comic_id} não encontrado.")
+        conn.close()
+        return
+    
+    # Desempacotar todos os campos
+    (comic_id, file_path, file_name, file_size, file_ext, clean_title, 
+     issue_number, year, cv_volume_id, cv_issue_id, volume_name, 
+     publisher, status, error_msg, created_at, updated_at) = result
+    
+    print("\n" + "=" * 70)
+    print("  📖 FICHA COMPLETA DO COMIC")
+    print("=" * 70)
+    
+    # Informações básicas
+    print(f"\n{'ID:':20s} {comic_id}")
+    print(f"{'Status:':20s} {status.upper()}")
+    
+    # Informações do arquivo
+    print("\n📁 ARQUIVO:")
+    print(f"{'  Nome:':20s} {file_name}")
+    print(f"{'  Caminho:':20s} {file_path}")
+    print(f"{'  Tamanho:':20s} {file_size / (1024*1024):.2f} MB")
+    print(f"{'  Formato:':20s} {file_ext}")
+    
+    # Informações extraídas
+    print("\n🔍 METADADOS EXTRAÍDOS:")
+    print(f"{'  Título limpo:':20s} {clean_title or 'N/A'}")
+    print(f"{'  Edição:':20s} #{issue_number if issue_number else 'N/A'}")
+    print(f"{'  Ano:':20s} {year or 'N/A'}")
+    
+    # Informações do Comic Vine
+    if status == 'identified':
+        print("\n🌐 COMIC VINE:")
+        print(f"{'  Série:':20s} {volume_name or 'N/A'}")
+        print(f"{'  Editora:':20s} {publisher or 'N/A'}")
+        print(f"{'  Volume ID:':20s} {cv_volume_id or 'N/A'}")
+        print(f"{'  Issue ID:':20s} {cv_issue_id or 'N/A'}")
+        
+        # Links úteis
+        if cv_volume_id:
+            print(f"\n🔗 LINKS:")
+            print(f"  Volume: https://comicvine.gamespot.com/volume/4050-{cv_volume_id}/")
+            if cv_issue_id:
+                print(f"  Issue:  https://comicvine.gamespot.com/issue/4000-{cv_issue_id}/")
+    
+    elif status == 'not_found':
+        print("\n⚠️  COMIC NÃO ENCONTRADO NO COMIC VINE")
+        if error_msg:
+            print(f"  Mensagem: {error_msg}")
+    
+    elif status == 'error':
+        print("\n❌ ERRO NO PROCESSAMENTO")
+        if error_msg:
+            print(f"  Mensagem: {error_msg}")
+    
+    elif status == 'pending':
+        print("\n⏳ AGUARDANDO PROCESSAMENTO")
+    
+    # Timestamps
+    print(f"\n⏰ DATAS:")
+    print(f"{'  Criado em:':20s} {created_at}")
+    print(f"{'  Atualizado em:':20s} {updated_at}")
+    
+    print("=" * 70 + "\n")
+    
+    conn.close()
+
 def search_comics(db_path, query):
     """Busca comics no banco"""
     conn = connect_db(db_path)
@@ -207,7 +283,7 @@ def search_comics(db_path, query):
     print("=" * 70)
     
     cursor.execute('''
-        SELECT file_name, volume_name, issue_number, year, publisher, status, file_path
+        SELECT id, file_name, volume_name, issue_number, year, publisher, status, file_path
         FROM comics 
         WHERE file_name LIKE ? OR clean_title LIKE ? OR volume_name LIKE ?
         LIMIT 50
@@ -219,7 +295,7 @@ def search_comics(db_path, query):
         print("\n❌ Nenhum resultado encontrado.")
     else:
         print(f"\n✓ {len(results)} resultado(s):\n")
-        for filename, vol_name, issue, year, publisher, status, path in results:
+        for comic_id, filename, vol_name, issue, year, publisher, status, path in results:
             info = vol_name or filename
             if issue:
                 info += f" #{issue}"
@@ -235,10 +311,12 @@ def search_comics(db_path, query):
                 'error': '⚠️'
             }.get(status, '❓')
             
-            print(f"{status_icon} {info}")
+            print(f"{status_icon} [ID: {comic_id}] {info}")
             print(f"   Arquivo: {filename}")
             print(f"   Caminho: {path}")
             print()
+        
+        print("💡 Use 'python3 comic_analyzer.py --db <DB> info <ID>' para ver ficha completa")
     
     print("=" * 70)
     
@@ -297,6 +375,9 @@ def main():
     search_parser = subparsers.add_parser('search', help='Busca comics')
     search_parser.add_argument('query', help='Termo de busca')
     
+    info_parser = subparsers.add_parser('info', help='Mostra ficha completa de um comic')
+    info_parser.add_argument('id', type=int, help='ID do comic')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -313,6 +394,8 @@ def main():
         list_not_found(args.db)
     elif args.command == 'search':
         search_comics(args.db, args.query)
+    elif args.command == 'info':
+        show_comic_info(args.db, args.id)
 
 if __name__ == "__main__":
     main()

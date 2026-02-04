@@ -100,6 +100,9 @@ python3 comic_analyzer.py --db ~/Downloads/comics_inventory.db not-found
 
 # Buscar um comic específico
 python3 comic_analyzer.py --db ~/Downloads/comics_inventory.db search "Batman"
+
+# Ver ficha completa de um comic (pelo ID)
+python3 comic_analyzer.py --db ~/Downloads/comics_inventory.db info 1234
 ```
 
 **Características:**
@@ -107,6 +110,7 @@ python3 comic_analyzer.py --db ~/Downloads/comics_inventory.db search "Batman"
 - Estatísticas por editora, ano, formato
 - Detecta duplicatas inteligentemente
 - Identifica edições faltantes nas séries
+- **Ficha completa** com todos os dados coletados e links para Comic Vine
 - Toda saída é no terminal (sem arquivos)
 
 ---
