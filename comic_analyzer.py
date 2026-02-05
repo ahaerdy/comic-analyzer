@@ -204,6 +204,7 @@ def show_comic_info(db_path, comic_id):
     cursor = conn.cursor()
     
     cursor.execute('SELECT * FROM comics WHERE id = ?', (comic_id,))
+    columns = [description[0] for description in cursor.description]
     result = cursor.fetchone()
     
     if not result:
@@ -211,64 +212,151 @@ def show_comic_info(db_path, comic_id):
         conn.close()
         return
     
-    # Desempacotar todos os campos
-    (comic_id, file_path, file_name, file_size, file_ext, clean_title, 
-     issue_number, year, cv_volume_id, cv_issue_id, volume_name, 
-     publisher, status, error_msg, created_at, updated_at) = result
+    # Cria dicionário com todos os campos
+    comic = dict(zip(columns, result))
     
     print("\n" + "=" * 70)
     print("  📖 FICHA COMPLETA DO COMIC")
     print("=" * 70)
     
     # Informações básicas
-    print(f"\n{'ID:':20s} {comic_id}")
-    print(f"{'Status:':20s} {status.upper()}")
+    print(f"\n{'ID:':20s} {comic['id']}")
+    print(f"{'Status:':20s} {comic['status'].upper()}")
     
     # Informações do arquivo
     print("\n📁 ARQUIVO:")
-    print(f"{'  Nome:':20s} {file_name}")
-    print(f"{'  Caminho:':20s} {file_path}")
-    print(f"{'  Tamanho:':20s} {file_size / (1024*1024):.2f} MB")
-    print(f"{'  Formato:':20s} {file_ext}")
+    print(f"{'  Nome:':20s} {comic['file_name']}")
+    print(f"{'  Caminho:':20s} {comic['file_path']}")
+    if comic['file_size']:
+        print(f"{'  Tamanho:':20s} {comic['file_size'] / (1024*1024):.2f} MB")
+    print(f"{'  Formato:':20s} {comic['file_ext']}")
     
     # Informações extraídas
     print("\n🔍 METADADOS EXTRAÍDOS:")
-    print(f"{'  Título limpo:':20s} {clean_title or 'N/A'}")
-    print(f"{'  Edição:':20s} #{issue_number if issue_number else 'N/A'}")
-    print(f"{'  Ano:':20s} {year or 'N/A'}")
+    print(f"{'  Título limpo:':20s} {comic['clean_title'] or 'N/A'}")
+    print(f"{'  Edição:':20s} #{comic['issue_number'] if comic['issue_number'] else 'N/A'}")
+    print(f"{'  Ano:':20s} {comic['year'] or 'N/A'}")
     
     # Informações do Comic Vine
-    if status == 'identified':
+    if comic['status'] == 'identified':
         print("\n🌐 COMIC VINE:")
-        print(f"{'  Série:':20s} {volume_name or 'N/A'}")
-        print(f"{'  Editora:':20s} {publisher or 'N/A'}")
-        print(f"{'  Volume ID:':20s} {cv_volume_id or 'N/A'}")
-        print(f"{'  Issue ID:':20s} {cv_issue_id or 'N/A'}")
+        print(f"{'  Série:':20s} {comic['volume_name'] or 'N/A'}")
+        print(f"{'  Editora:':20s} {comic['publisher'] or 'N/A'}")
         
-        # Links úteis
-        if cv_volume_id:
-            print(f"\n🔗 LINKS:")
-            print(f"  Volume: https://comicvine.gamespot.com/volume/4050-{cv_volume_id}/")
-            if cv_issue_id:
-                print(f"  Issue:  https://comicvine.gamespot.com/issue/4000-{cv_issue_id}/")
+        # Datas de publicação
+        if comic.get('cover_date'):
+            print(f"{'  Data da capa:':20s} {comic['cover_date']}")
+        if comic.get('store_date'):
+            print(f"{'  Data nas lojas:':20s} {comic['store_date']}")
+        
+        # Créditos
+        credits_shown = False
+        if comic.get('writers'):
+            if not credits_shown:
+                print("\n✍️  CRÉDITOS:")
+                credits_shown = True
+            print(f"{'  Roteiro:':20s} {comic['writers']}")
+        if comic.get('pencilers'):
+            if not credits_shown:
+                print("\n✍️  CRÉDITOS:")
+                credits_shown = True
+            print(f"{'  Arte/Lápis:':20s} {comic['pencilers']}")
+        if comic.get('inkers'):
+            print(f"{'  Arte-final:':20s} {comic['inkers']}")
+        if comic.get('colorists'):
+            print(f"{'  Cores:':20s} {comic['colorists']}")
+        if comic.get('letterers'):
+            print(f"{'  Letras:':20s} {comic['letterers']}")
+        if comic.get('cover_artists'):
+            print(f"{'  Capa:':20s} {comic['cover_artists']}")
+        if comic.get('editors'):
+            print(f"{'  Editor:':20s} {comic['editors']}")
+        
+        # Personagens e equipes
+        if comic.get('characters'):
+            print(f"\n👥 PERSONAGENS:")
+            print(f"   {comic['characters']}")
+        
+        if comic.get('teams'):
+            print(f"\n🦸 EQUIPES:")
+            print(f"   {comic['teams']}")
+        
+        if comic.get('story_arcs'):
+            print(f"\n📚 ARCOS DE HISTÓRIA:")
+            print(f"   {comic['story_arcs']}")
+        
+        if comic.get('locations'):
+            print(f"\n🗺️  LOCALIZAÇÕES:")
+            print(f"   {comic['locations']}")
+        
+        # Sinopse
+        if comic.get('description'):
+            print(f"\n📝 SINOPSE:")
+            # Remove HTML tags básicas
+            import re
+            desc = comic['description']
+            desc = re.sub(r'<[^>]+>', '', desc)  # Remove HTML
+            desc = desc.strip()
+            
+            # Limita o tamanho
+            if len(desc) > 500:
+                desc = desc[:500] + "..."
+            
+            # Quebra em linhas de 70 caracteres
+            words = desc.split()
+            lines = []
+            current_line = "   "
+            for word in words:
+                if len(current_line) + len(word) + 1 > 70:
+                    lines.append(current_line)
+                    current_line = "   " + word
+                else:
+                    current_line += " " + word if current_line != "   " else word
+            if current_line:
+                lines.append(current_line)
+            
+            print("\n".join(lines))
+        
+        # IDs e Links
+        print(f"\n🔗 REFERÊNCIAS:")
+        print(f"{'  Volume ID:':20s} {comic['comicvine_volume_id'] or 'N/A'}")
+        print(f"{'  Issue ID:':20s} {comic['comicvine_issue_id'] or 'N/A'}")
+        
+        if comic.get('cover_url'):
+            print(f"\n🖼️  CAPA:")
+            print(f"   {comic['cover_url']}")
+        
+        if comic['comicvine_volume_id']:
+            print(f"\n🌐 LINKS:")
+            print(f"  Volume: https://comicvine.gamespot.com/volume/4050-{comic['comicvine_volume_id']}/")
+            if comic['comicvine_issue_id']:
+                print(f"  Issue:  https://comicvine.gamespot.com/issue/4000-{comic['comicvine_issue_id']}/")
+            if comic.get('site_detail_url'):
+                print(f"  Página:  {comic['site_detail_url']}")
     
-    elif status == 'not_found':
+    elif comic['status'] == 'not_found':
         print("\n⚠️  COMIC NÃO ENCONTRADO NO COMIC VINE")
-        if error_msg:
-            print(f"  Mensagem: {error_msg}")
+        if comic['error_message']:
+            print(f"  Mensagem: {comic['error_message']}")
     
-    elif status == 'error':
+    elif comic['status'] == 'error':
         print("\n❌ ERRO NO PROCESSAMENTO")
-        if error_msg:
-            print(f"  Mensagem: {error_msg}")
+        if comic['error_message']:
+            print(f"  Mensagem: {comic['error_message']}")
     
-    elif status == 'pending':
+    elif comic['status'] == 'pending':
         print("\n⏳ AGUARDANDO PROCESSAMENTO")
     
     # Timestamps
     print(f"\n⏰ DATAS:")
-    print(f"{'  Criado em:':20s} {created_at}")
-    print(f"{'  Atualizado em:':20s} {updated_at}")
+    print(f"{'  Criado em:':20s} {comic['created_at']}")
+    print(f"{'  Atualizado em:':20s} {comic['updated_at']}")
+    
+    # Dica sobre enriquecimento
+    if comic['status'] == 'identified' and not comic.get('description'):
+        print(f"\n💡 DICA:")
+        print(f"   Este comic ainda não foi enriquecido com detalhes extras.")
+        print(f"   Execute: python3 comic_enricher.py --db <DB> --limit 10")
     
     print("=" * 70 + "\n")
     

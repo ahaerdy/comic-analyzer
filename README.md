@@ -13,6 +13,7 @@ Este sistema foi desenvolvido para processar **grandes coleções** de arquivos 
 - ✅ **Retomável** - pode ser interrompido e continua de onde parou
 - ✅ **SQLite local** - todos os dados ficam no seu computador
 - ✅ **Limpeza avançada de nomes** - extrai título, edição e ano
+- ✅ **Metadados completos** - sinopse, créditos, personagens, capas
 - ✅ **Ferramentas de análise** - duplicatas, lacunas, estatísticas
 - ✅ **Não modifica arquivos originais** - apenas consulta e cataloga
 - ✅ **Preparado para frontend** - banco estruturado para integração
@@ -115,7 +116,53 @@ python3 comic_analyzer.py --db ~/Downloads/comics_inventory.db info 1234
 
 ---
 
-### 4. **comic_recleaner.py** - Re-processamento de Nomes
+### 4. **comic_enricher.py** - Enriquecimento de Metadados
+Busca informações detalhadas da API do Comic Vine para comics já identificados.
+
+**Uso:**
+```bash
+# Atualizar estrutura do banco (primeira vez)
+python3 comic_enricher.py --db ~/Downloads/comics_inventory.db --upgrade-db
+
+# Testar com poucos comics
+python3 comic_enricher.py --db ~/Downloads/comics_inventory.db --limit 10
+
+# Enriquecer todos os identificados
+python3 comic_enricher.py --db ~/Downloads/comics_inventory.db
+
+# Re-enriquecer todos (força atualização)
+python3 comic_enricher.py --db ~/Downloads/comics_inventory.db --force
+
+# Rodar em background
+nohup python3 comic_enricher.py --db ~/Downloads/comics_inventory.db > enrich.log 2>&1 &
+```
+
+**O que busca:**
+- ✅ **Sinopse completa** da edição
+- ✅ **Créditos**: Roteiristas, desenhistas, arte-finalistas, coloristas, letristas, editores, capistas
+- ✅ **Personagens** que aparecem
+- ✅ **Equipes** (teams)
+- ✅ **Localizações** da história
+- ✅ **Arcos de história** (story arcs)
+- ✅ **URL da capa** para download
+- ✅ **Datas de publicação** (cover date, store date)
+
+**Características:**
+- Só processa comics já identificados com `comicvine_issue_id`
+- Pula comics que já foram enriquecidos (use `--force` para re-enriquecer)
+- Rate limiting: 2 segundos entre requisições
+- Salva progresso a cada 10 registros
+- Adiciona colunas automaticamente ao banco
+- Tempo estimado: ~2 segundos por comic
+
+**Quando usar:**
+- Após identificar os comics com `comic_identifier.py`
+- Quando quiser informações completas para uma biblioteca detalhada
+- Para ter sinopses, créditos completos e metadados ricos
+
+---
+
+### 5. **comic_recleaner.py** - Re-processamento de Nomes
 Re-processa os nomes dos arquivos com lógica de limpeza melhorada.
 
 **Uso:**
@@ -143,7 +190,7 @@ python3 comic_recleaner.py --db ~/Downloads/comics_inventory.db --reset-failed
 
 ---
 
-### 5. **comic_dbcheck.py** - Diagnóstico do Banco
+### 6. **comic_dbcheck.py** - Diagnóstico do Banco
 Verifica o estado e integridade do banco de dados.
 
 **Uso:**
@@ -287,6 +334,27 @@ python3 comic_identifier.py --db $DB --status
 | `error_message` | TEXT | Mensagem de erro (se houver) |
 | `created_at` | TIMESTAMP | Data de criação |
 | `updated_at` | TIMESTAMP | Última atualização |
+
+**Campos adicionados pelo comic_enricher.py:**
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `description` | TEXT | Sinopse completa da edição |
+| `cover_date` | TEXT | Data da capa |
+| `store_date` | TEXT | Data de chegada nas lojas |
+| `writers` | TEXT | Roteiristas |
+| `pencilers` | TEXT | Desenhistas/Arte |
+| `inkers` | TEXT | Arte-finalistas |
+| `colorists` | TEXT | Coloristas |
+| `letterers` | TEXT | Letristas |
+| `editors` | TEXT | Editores |
+| `cover_artists` | TEXT | Artistas de capa |
+| `characters` | TEXT | Personagens que aparecem |
+| `teams` | TEXT | Equipes |
+| `locations` | TEXT | Localizações |
+| `story_arcs` | TEXT | Arcos de história |
+| `cover_url` | TEXT | URL da imagem da capa |
+| `site_detail_url` | TEXT | Link para página no Comic Vine |
 
 ### Status possíveis
 
@@ -486,7 +554,23 @@ python3 comic_recleaner.py --db $DB --reset-failed
 python3 comic_identifier.py --db $DB
 
 # ============================================
-# FASE 7: ANÁLISE FINAL
+# FASE 7: ENRIQUECIMENTO (opcional mas recomendado)
+# ============================================
+
+# Atualizar banco (primeira vez)
+python3 comic_enricher.py --db $DB --upgrade-db
+
+# Testar com 10 comics
+python3 comic_enricher.py --db $DB --limit 10
+
+# Enriquecer todos (em background)
+nohup python3 comic_enricher.py --db $DB > enrich.log 2>&1 &
+
+# Monitorar progresso
+tail -f enrich.log
+
+# ============================================
+# FASE 8: ANÁLISE FINAL
 # ============================================
 
 # Estatísticas completas
@@ -503,7 +587,7 @@ python3 comic_analyzer.py --db $DB search "Batman"
 python3 comic_analyzer.py --db $DB search "Homem-Aranha"
 
 # ============================================
-# FASE 8: EXPORTAÇÃO
+# FASE 9: EXPORTAÇÃO
 # ============================================
 
 # Exportar tudo para CSV
