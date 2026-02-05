@@ -1,10 +1,10 @@
 # 🎨 Comic Collection Manager
 
-Sistema completo e robusto para identificar, catalogar e gerenciar coleções de comics usando a API do Comic Vine.
+Este projeto é uma prova de conceito para demonstrar a viabilidade de catalogação automatizada de coleções. Sistema completo e robusto para identificar, catalogar e gerenciar coleções de comics usando a API do Comic Vine.
 
 ## 📋 Visão Geral
 
-Este sistema foi desenvolvido para processar **grandes coleções** de arquivos de comics (CBR, CBZ, PDF, CBT, CB7) e identificá-los automaticamente através da API do Comic Vine. Projetado para ser resiliente, eficiente e preparado para expansão futura com frontend React ou Spring Boot.
+O sistema foi desenvolvido para processar **grandes coleções** de arquivos de comics (CBR, CBZ, PDF, CBT, CB7) e identificá-los automaticamente através da API do Comic Vine. Projetado para ser resiliente, eficiente e preparado para expansão futura com frontend React ou Spring Boot.
 
 ### ✨ Características Principais
 
