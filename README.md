@@ -1,6 +1,6 @@
 # 🎨 Comic Collection Manager
 
-Este projeto é uma prova de conceito para demonstrar a viabilidade de catalogação automatizada de coleções. Sistema completo e robusto para identificar, catalogar e gerenciar coleções de comics usando a API do Comic Vine.
+Este projeto é uma prova de conceito para demonstrar a viabilidade de catalogação automatizada de coleções. Sistema completo e robusto, tem por objetivo identificar, catalogar e gerenciar coleções de comics usando a API do Comic Vine.
 
 ## 📋 Visão Geral
 
