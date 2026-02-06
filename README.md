@@ -794,12 +794,6 @@ MIT License
 
 ---
 
-## 📧 Suporte
-
-Problemas ou dúvidas? Abra uma issue no GitHub!
-
----
-
 **Versão:** 1.0.0 (POC)  
 **Última atualização:** Fevereiro 2026  
-**Autor:** Seu Nome
+**Autor:** Arthur Haerdy
