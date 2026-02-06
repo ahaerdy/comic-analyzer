@@ -1,0 +1,10 @@
+# Comic Collection Manager - Dependencies
+# Install with: pip install -r requirements.txt --break-system-packages
+
+# Core dependency
+requests>=2.31.0
+
+# Optional (for future features)
+# pillow>=10.0.0        # Image processing (for cover download)
+# beautifulsoup4>=4.12.0  # Web scraping (for genre classification)
+# python-slugify>=8.0.0   # URL/filename sanitization
