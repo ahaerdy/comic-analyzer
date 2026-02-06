@@ -1,7 +1,7 @@
 # 🎨 Comic Collection Manager
 
 > **Sistema de catalogação automatizada de comics usando Comic Vine API**  
-> Status: 💡 **Prova de Conceito (POC)**
+> Status: Este projeto é uma **Prova de Conceito (POC)**
 
 ---
 
