@@ -72,29 +72,29 @@ O Comic Collection Manager é um sistema de 3 camadas para catalogação, identi
 │                   CAMADA 1: DATA LAYER                          │
 │                      (Python Scripts)                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  Responsabilidades:                                             │
-│  • Escanear sistema de arquivos                                │
-│  • Extrair metadados dos nomes de arquivo                      │
-│  • Identificar comics via Comic Vine API                       │
-│  • Enriquecer com dados detalhados                             │
-│  • Manter integridade do banco de dados                        │
-│                                                                  │
+│  • Escanear sistema de arquivos                                 │
+│  • Extrair metadados dos nomes de arquivo                       │
+│  • Identificar comics via Comic Vine API                        │
+│  • Enriquecer com dados detalhados                              │
+│  • Manter integridade do banco de dados                         │
+│                                                                 │
 │  Tecnologias:                                                   │
 │  • Python 3.8+                                                  │
 │  • SQLite3 (built-in)                                           │
 │  • requests (HTTP client)                                       │
-│                                                                  │
+│                                                                 │
 │  Características:                                               │
 │  • Batch processing (horas)                                     │
 │  • Retomável (salva progresso)                                  │
 │  • Rate limiting automático                                     │
 │  • Resiliência a erros                                          │
-│                                                                  │
+│                                                                 │
 │  Output:                                                        │
 │  📦 comics_inventory.db (SQLite)                                │
-│     └─ 32 campos x 20k+ registros                              │
-│                                                                  │
+│     └─ 32 campos x 20k+ registros                               │
+│                                                                 │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        │ SQLite Database
@@ -104,34 +104,34 @@ O Comic Collection Manager é um sistema de 3 camadas para catalogação, identi
 │                 CAMADA 2: BUSINESS LAYER                        │
 │                   (Backend API - Node.js)                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  Responsabilidades:                                             │
-│  • Expor API REST para frontend                                │
-│  • Consultas rápidas ao SQLite                                 │
-│  • Servir capas de comics                                      │
-│  • Integração com YACReader                                    │
-│  • Business logic (favoritos, leitura, etc)                    │
-│                                                                  │
+│  • Expor API REST para frontend                                 │
+│  • Consultas rápidas ao SQLite                                  │
+│  • Servir capas de comics                                       │
+│  • Integração com YACReader                                     │
+│  • Business logic (favoritos, leitura, etc)                     │
+│                                                                 │
 │  Tecnologias:                                                   │
 │  • Node.js 18+                                                  │
 │  • Express (framework web)                                      │
 │  • better-sqlite3 (SQLite driver)                               │
 │  • CORS (cross-origin)                                          │
-│                                                                  │
+│                                                                 │
 │  Características:                                               │
 │  • Respostas em milissegundos                                   │
 │  • RESTful API design                                           │
 │  • Stateless (escalável)                                        │
 │  • Cache inteligente                                            │
-│                                                                  │
+│                                                                 │
 │  Endpoints:                                                     │
 │  GET  /api/comics           - Lista comics                      │
-│  GET  /api/comics/:id       - Detalhes                         │
+│  GET  /api/comics/:id       - Detalhes                          │
 │  GET  /api/series           - Lista séries                      │
-│  GET  /api/search?q=...     - Busca                            │
-│  POST /api/comics/:id/open  - Abre no YACReader               │
-│  GET  /api/covers/:id       - Serve capa                       │
-│                                                                  │
+│  GET  /api/search?q=...     - Busca                             │
+│  POST /api/comics/:id/open  - Abre no YACReader                 │
+│  GET  /api/covers/:id       - Serve capa                        │
+│                                                                 │
 └──────────────────────┬──────────────────────────────────────────┘
                        │
                        │ HTTP/REST API
@@ -141,35 +141,35 @@ O Comic Collection Manager é um sistema de 3 camadas para catalogação, identi
 │               CAMADA 3: PRESENTATION LAYER                      │
 │                    (Frontend - React)                           │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+│                                                                 │
 │  Responsabilidades:                                             │
 │  • Interface visual do usuário                                  │
 │  • Grid de comics com capas                                     │
 │  • Busca e filtros avançados                                    │
 │  • Visualização de detalhes                                     │
 │  • Sistema de favoritos/lidos                                   │
-│                                                                  │
+│                                                                 │
 │  Tecnologias:                                                   │
 │  • React 18+                                                    │
 │  • TypeScript (type safety)                                     │
 │  • Tailwind CSS (styling)                                       │
 │  • React Router (navegação)                                     │
 │  • React Query (data fetching)                                  │
-│  • react-window (virtualização)                                │
-│                                                                  │
+│  • react-window (virtualização)                                 │
+│                                                                 │
 │  Características:                                               │
 │  • SPA (Single Page Application)                                │
 │  • Virtualização (performance)                                  │
 │  • Lazy loading de imagens                                      │
 │  • Responsive design                                            │
 │  • Cache local (React Query)                                    │
-│                                                                  │
+│                                                                 │
 │  Principais Views:                                              │
 │  • Home (grid de comics)                                        │
-│  • Comic Detail (ficha completa)                               │
-│  • Series View (edições da série)                              │
+│  • Comic Detail (ficha completa)                                │
+│  • Series View (edições da série)                               │
 │  • Search Results                                               │
-│                                                                  │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1341,5 +1341,5 @@ MIT License
 
 **Versão:** 2.0 (Arquitetura Completa)  
 **Última atualização:** Fevereiro 2026  
-**Autor:** [Seu Nome]  
+**Autor:** Arthur Haerdy
 **Status:** Data Layer completo | Backend/Frontend em planejamento
