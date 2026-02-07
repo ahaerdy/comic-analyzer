@@ -1,7 +1,7 @@
 # 🎨 Comic Collection Manager
 
 **Sistema de catalogação automatizada de comics usando Comic Vine API**  
-Este projeto é uma **Prova de Conceito (POC)** dividido em vários módulos escritos em Python.
+Este projeto é uma **Prova de Conceito (POC)** - dividido em vários módulos escritos em Python.
 
 ---
 
